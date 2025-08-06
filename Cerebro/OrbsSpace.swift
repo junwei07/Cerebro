@@ -127,16 +127,18 @@ struct OrbsSpace: View {
         Task {
             try? await Task.sleep(nanoseconds: 2_000_000_000)
             // disperse orbs
-            for (index, orb) in orbEntities.enumerated() {
-                // Calculate a new dispersed position
-                let angle = Float(index) * (Float.pi / 2) // spread out in a circle
-                let radius: Float = 1.5
-                let newX = cos(angle) * radius
-                let newZ = sin(angle) * radius - 3
-                let newPosition = SIMD3<Float>(newX, orb.initPosition.y, newZ)
-                
+            for orb in orbEntities {
+                // Define random X and Z within limits
+                let maxRadius: Float = 10.0
+                let minZ: Float = -10.0
+                let maxZ: Float = -2.5
+
+                let randomX = Float.random(in: -maxRadius...maxRadius)
+                let randomZ = Float.random(in: minZ...maxZ)
+                let newPosition = SIMD3<Float>(randomX, orb.initPosition.y, randomZ)
+
                 let transform = Transform(translation: newPosition)
-                
+
                 orb.entity.move(to: transform, relativeTo: orb.entity.parent, duration: 2, timingFunction: .easeInOut)
             }
         }
