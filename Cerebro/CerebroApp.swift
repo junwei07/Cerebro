@@ -9,9 +9,17 @@ import SwiftUI
 
 @main
 struct CerebroApp: App {
+    @StateObject private var appState = AppState()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(appState: appState)
         }
+        .windowResizability(.automatic)
+        
+        ImmersiveSpace(id: "Forest") {
+            OrbsSpace(appState: appState)
+        }
+//        .immersionStyle(selection:.constant(.full), in: .full)
     }
 }
