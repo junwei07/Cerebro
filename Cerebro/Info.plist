@@ -11,5 +11,7 @@
 		<key>UISceneConfigurations</key>
 		<dict/>
 	</dict>
+	<key>NSWorldSensingUsageDescription</key>
+	<string>Allow Plane Detection</string>
 </dict>
 </plist>

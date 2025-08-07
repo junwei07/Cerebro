@@ -29,9 +29,9 @@ struct ContentView: View {
                 Button("Show Orbs") {
                     Task {
                         await self.openImmersiveSpace(id: "Forest")
+                        appState.floating = true
                     }
                     isImmersive = true
-                    appState.floating = true
                 }
             }
             
