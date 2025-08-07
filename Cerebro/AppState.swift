@@ -11,7 +11,11 @@ import Combine
 class AppState: ObservableObject {
 //    static let shared = AppState()
     @Published var isImmersive: Bool = false
+    @Published var withSound: Bool = false
     @Published var disperse: Bool = false
     @Published var floating: Bool = false
     @Published var hidingOrbs: Bool = false
+    @Published var playingMelody: Bool = false
+    @Published var showScore: Bool = false
+    @Published var showHint: Bool = false
 }

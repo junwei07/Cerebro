@@ -11,6 +11,7 @@ import SwiftUI
 struct CerebroApp: App {
     @StateObject private var appState = AppState()
     @StateObject private var worldTrackingManager = WorldTrackingManager()
+    @State var immersionStyle : ImmersionStyle = .mixed
     
     var body: some Scene {
         WindowGroup {
@@ -18,9 +19,9 @@ struct CerebroApp: App {
         }
         .windowResizability(.automatic)
         
-        ImmersiveSpace(id: "Forest") {
+        ImmersiveSpace(id: "OrbSpace") {
             OrbsSpace(appState: appState, worldTrackingManager: worldTrackingManager)
         }
-//        .immersionStyle(selection:.constant(.full), in: .full)
+        .immersionStyle(selection: $immersionStyle, in: .mixed, .full, .progressive)
     }
 }

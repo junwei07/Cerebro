@@ -16,8 +16,18 @@ struct OrbsSpace: View {
 //    @Environment(\.openWindow) private var openWindow
     @State private var Orbs: [Orb] = []
     @State private var anchor = AnchorEntity(world: [0, 0, 0])
+    @State private var anchorTable = AnchorEntity(plane: .horizontal, classification: .table)
+    @State private var anchorSeat = AnchorEntity(plane: .horizontal, classification: .seat)
     @State private var userPosition: SIMD3<Float> = .zero
-    @State private var selectedOrb: Orb?
+    @State private var selectedOrbs: [Orb] = []
+    @State private var finalScoreEntity: Entity? = nil
+    @State private var isPlayingMelody: Bool = false
+    @State private var tries: Int = 1
+    @State private var totalCorrect: Int = 0
+
+    var finalScoreAttachment: some View {
+        ScoreView(appState: appState, tries: $tries, totalCorrect: $totalCorrect, orbs: Orbs, selectedOrbs: selectedOrbs)
+    }
     
     var body: some View {
         
@@ -30,37 +40,51 @@ struct OrbsSpace: View {
 //        .padding()
         
         
-        RealityView { content in
+        RealityView { content, attachments in
+            anchor.children.removeAll()
             
+
             // initialize orbs
             let orbMesh = MeshResource.generateSphere(radius: 0.2)
             
             let orbEntity1 = Orb(
                 entity: ModelEntity(mesh: orbMesh, materials: [SimpleMaterial(color: .yellow, isMetallic: true)]),
-                initPosition: [-0.75, 0.5, -3]
+                initPosition: [-1, 0, -2],
+                audioResource: try? await AudioFileResource(named: "V2SoundDo.m4a")
             )
-            orbEntity1.entity.components.set(OpacityComponent(opacity: 1))
+//            orbEntity1.entity.components.set(OpacityComponent(opacity: 1))
             
             let orbEntity2 = Orb(
                 entity: ModelEntity(mesh: orbMesh, materials: [SimpleMaterial(color: .blue, isMetallic: true)]),
-                initPosition: [-0.25, 0.5, -3]
+                initPosition: [-0.5, 0, -2],
+                audioResource: try? await AudioFileResource(named: "SoundRe.m4a")
             )
             
             let orbEntity3 = Orb(
                 entity: ModelEntity(mesh: orbMesh, materials: [SimpleMaterial(color: .red, isMetallic: true)]),
-                initPosition: [0.25, 0.5, -3]
+                initPosition: [0, 0, -2],
+                audioResource: try? await AudioFileResource(named: "SoundMi.m4a")
             )
             let orbEntity4 = Orb(
                 entity: ModelEntity(mesh: orbMesh, materials: [SimpleMaterial(color: .green, isMetallic: true)]),
-                initPosition: [0.75, 0.5, -3]
+                initPosition: [0.5, 0, -2],
+                audioResource: try? await AudioFileResource(named: "SoundFa.m4a")
+            )
+            let orbEntity5 = Orb(
+                entity: ModelEntity(mesh: orbMesh, materials: [SimpleMaterial(color: .orange, isMetallic: true)]),
+                initPosition: [1, 0, -2],
+                audioResource: try? await AudioFileResource(named: "SoundSo.m4a")
             )
             
             // all orbs
-            Orbs = [orbEntity1, orbEntity2, orbEntity3, orbEntity4]
+            Orbs = [orbEntity1, orbEntity2, orbEntity3, orbEntity4, orbEntity5]
 
 
             for orb in Orbs {
                 orb.entity.position = orb.initPosition
+                orb.entity.generateCollisionShapes(recursive: false)
+                orb.entity.components.set(InputTargetComponent(allowedInputTypes: .all))
+
                 anchor.addChild(orb.entity)
                 startFloatingAnimation(orb: orb)
             }
@@ -69,16 +93,69 @@ struct OrbsSpace: View {
             
             try? await worldTrackingManager.startSession()
 
+            // score attachment
+            if let finalScoreAttachment = attachments.entity(for: "finalScore") {
+                print("rendered final score")
+                finalScoreAttachment.components.set(OpacityComponent(opacity: 0))
+                finalScoreEntity = finalScoreAttachment
+                finalScoreAttachment.position = [0, 1.5, -3]
+                anchor.addChild(finalScoreAttachment)
+            }
             
+        } attachments: {
+            Attachment(id: "finalScore") {
+                finalScoreAttachment
+            }
         }
-        .onChange(of: appState.disperse) { oldValue, newValue in
+        .onAppear {
+            Task {
+                while true {
+                    fetchUserPosition()
+                    updateScoreViewPosition()
+                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+                }
+            }
+        }
+        .simultaneousGesture(
+            appState.hidingOrbs ?
+                SpatialTapGesture()
+                    .targetedToAnyEntity()
+                    .onEnded({ value in
+                        let tappedOrb = value.entity
+                        
+                        // Find the orb in the Orbs array
+                        if let index = Orbs.firstIndex(where: { $0.entity == tappedOrb }) {
+                            print("Tapped orb #\(index)")
+
+                            let orb = Orbs[index]
+                            
+                            // play sound
+                            if let audio = orb.audioResource {
+                                orb.entity.playAudio(audio)
+                            } else {
+                                print("⚠️ Audio resource is nil for orb \(index)")
+                            }
+                                
+                            // Avoid duplicates
+                            if !selectedOrbs.contains(where: { $0.entity == orb.entity }) {
+                                Orbs[index].isSelected = true
+                                animateGlow(orb: orb)
+                                showOrb(index: index)
+                                selectedOrbs.append(orb)
+//                                print("selected orbs: \(selectedOrbs)")
+                                print("selected orbs: \(selectedOrbs.count)")
+                            }
+                        }
+                    })
+            : nil)
+        .onChange(of: appState.disperse) { _, newValue in
             if newValue {
                 disperseOrbs()
             } else {
                 resetOrbs()
             }
         }
-        .onChange(of: appState.hidingOrbs) { oldValue, newValue in
+        .onChange(of: appState.hidingOrbs) { _, newValue in
             if newValue {
                 hideOrbs()
                 
@@ -86,28 +163,26 @@ struct OrbsSpace: View {
                     // continuously query for user position
                     while appState.hidingOrbs {
                         //update user position
-                        fetchUserPosition()
+//                        fetchUserPosition()
                         
-                        // compare to each orb's position
-//                        for orb in Orbs {
-//                            let orbPos = orb.entity.position
-//                            if simd_distance(userPosition, orbPos) < 5 {
-//                                showOrb(orb: orb)
-//                                print("close enough")
-//                            } else {
-////                                if !orb.isHidden {
-////                                    hideOrb(orb: orb)
-////                                }
+//                        if appState.showScore {
+//                            if let scoreEntity = finalScoreEntity {
+//                                scoreEntity.position = SIMD3<Float>(
+//                                    userPosition.x,
+//                                    userPosition.y,
+//                                    userPosition.z - 1.5
+//                                )
 //                            }
 //                        }
+
                         
                         for i in Orbs.indices {
                             let orbPos = Orbs[i].entity.position
-                            if simd_distance(userPosition, orbPos) < 5 {
+                            if simd_distance(userPosition, orbPos) < 5 || isPlayingMelody {
                                 showOrb(index: i)
-                                print("close enough")
+//                                print("close enough")
                             } else {
-                                if !Orbs[i].isHidden {
+                                if !Orbs[i].isHidden && !Orbs[i].isSelected{
                                     hideOrb(index: i)
                                 }
                             }
@@ -117,17 +192,34 @@ struct OrbsSpace: View {
                     }
                 }
             } else {
-                
                 showOrbs()
             }
-            
         }
-        .gesture(SpatialTapGesture().targetedToEntity(anchor).onEnded({ value in
-            let orbEntity = value.entity
-            
-            print("tapped \(orbEntity)")
-        }))
-        
+        .onChange(of: appState.playingMelody) { _, newValue in
+            if newValue {
+                playMelody()
+                appState.playingMelody = false
+            }
+        }
+        .onChange(of: appState.showHint) { _, newValue in
+            appState.hidingOrbs = false
+            if newValue {
+                playMelody()
+                appState.showHint = false
+            }
+            appState.hidingOrbs = true
+        }
+        .onChange(of: selectedOrbs.count) { _, newValue in
+            if newValue == 5 {
+                guard let entity = finalScoreEntity else { return }
+                entity.components.set(OpacityComponent(opacity: 1))
+                print("show score")
+                appState.showHint = true
+            } else {
+                guard let entity = finalScoreEntity else { return }
+                entity.components.set(OpacityComponent(opacity: 0))
+            }
+        }
     }
     
     func fetchUserPosition() {
@@ -140,12 +232,12 @@ struct OrbsSpace: View {
         
         let translation = matrix.columns.3
         userPosition = SIMD3<Float>(translation.x, translation.y, translation.z)
-        print(userPosition)
+//        print(userPosition)
         
     }
 
     func startFloatingAnimation(orb: Orb) {
-        print(orb.initPosition)
+//        print(orb.initPosition)
 
             Task {
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
@@ -163,6 +255,25 @@ struct OrbsSpace: View {
         
     }
     
+    func animateGlow(orb: Orb) {
+        // Store the original material
+        let originalMaterial = orb.entity.model?.materials.first
+
+        // Create a bright glowing material
+        let glowingMaterial = UnlitMaterial(color: .white)
+
+        // Apply the glowing material
+        orb.entity.model?.materials = [glowingMaterial]
+
+        Task {
+            try? await Task.sleep(nanoseconds: 200_000_000) // 0.5 seconds
+            if let original = originalMaterial {
+                orb.entity.model?.materials = [original]
+            }
+        }
+    }
+    
+    
     func disperseOrbs() {
         // stop the orbs
         appState.floating = false
@@ -172,8 +283,8 @@ struct OrbsSpace: View {
             // disperse orbs
             for orb in Orbs {
                 // Define random X and Z within limits
-                let maxRadius: Float = 10.0
-                let minZ: Float = -10.0
+                let maxRadius: Float = 5.0
+                let minZ: Float = -5.0
                 let maxZ: Float = -3
 
                 let randomX = Float.random(in: -maxRadius...maxRadius)
@@ -189,8 +300,12 @@ struct OrbsSpace: View {
     
     func resetOrbs() {
         appState.hidingOrbs = false
+        appState.disperse = false
+        
         
         for i in Orbs.indices {
+            Orbs[i].isSelected = false
+            Orbs[i].isHidden = false
             showOrb(index: i)
         }
         
@@ -200,22 +315,20 @@ struct OrbsSpace: View {
 //            startFloatingAnimation(orb: orb)
         }
         
+        selectedOrbs = []
+        
         
     }
     
     func hideOrbs() {
-//        for orb in Orbs {
-//            animateOpacity(of: orb.entity, to: 0, duration: 2)
-//        }
         for i in Orbs.indices {
-                hideOrb(index: i)
-            }
+            hideOrb(index: i)
+        }
     }
     
     func hideOrb(index: Int) {
-//        animateOpacity(of: orb.entity, to: 0, duration: 2)
         animateOpacity(of: Orbs[index].entity, to: 0, duration: 2)
-            Orbs[index].isHidden = true
+        Orbs[index].isHidden = true
     }
     
     func showOrbs() {
@@ -223,14 +336,20 @@ struct OrbsSpace: View {
 //            animateOpacity(of: orb.entity, to: 1, duration: 2)
 //        }
         for i in Orbs.indices {
-                showOrb(index: i)
-            }
+            showOrb(index: i)
+        }
     }
     
     func showOrb(index: Int) {
-//        animateOpacity(of: orb.entity, to: 1, duration: 2)
-        animateOpacity(of: Orbs[index].entity, to: 1, duration: 2)
-            Orbs[index].isHidden = false
+        if isPlayingMelody || appState.showHint {
+            animateOpacity(of: Orbs[index].entity, to: 1, duration: 0.2)
+        } else if Orbs[index].isSelected {
+            animateOpacity(of: Orbs[index].entity, to: 1, duration: 0.5)
+        } else {
+            animateOpacity(of: Orbs[index].entity, to: 1, duration: 1.5)
+        }
+        
+        Orbs[index].isHidden = false
     }
     
     func animateOpacity(of entity: ModelEntity, to targetOpacity: Float, duration: TimeInterval) {
@@ -251,6 +370,64 @@ struct OrbsSpace: View {
 
         entity.playAnimation(animationResource)
     }
+    
+    func animateOpacityAsync(of entity: ModelEntity, to targetOpacity: Float, duration: TimeInterval) async {
+
+        let animation = FromToByAnimation<Float>(
+            from: entity.components[OpacityComponent.self]?.opacity,
+            to: targetOpacity,
+            duration: duration,
+            timing: .easeInOut,
+            bindTarget: .opacity
+        )
+        
+        // Create an AnimationView using the defined animation with a delay
+        let animationViewDefinition = AnimationView(source: animation, speed: 0.5)
+
+        // Generate an AnimationResource from the AnimationViewDefinition
+        let animationResource = try! AnimationResource.generate(with: animationViewDefinition)
+
+        entity.playAnimation(animationResource)
+        try? await Task.sleep(nanoseconds: 100_000_000)
+    }
+    
+    func playMelody() {
+        isPlayingMelody = true
+        Task {
+            for i in Orbs.indices {
+        
+                let orb = Orbs[i]
+                // 1. Set orb to visible before animating
+//                            orb.entity.components.set(OpacityComponent(opacity: 0))
+                            Orbs[i].isHidden = false
+
+                            // 2. Animate opacity to 1.0 (fade in)
+                await animateOpacityAsync(of: orb.entity, to: 1.0, duration: 0.5)
+
+                            // 3. Wait briefly after animation, then play sound
+                            if let audio = orb.audioResource {
+                                orb.entity.playAudio(audio)
+                            } else {
+                                print("⚠️ Audio resource is nil for orb \(i)")
+                            }
+                try? await Task.sleep(nanoseconds: 100_000_000)
+                
+            }
+            isPlayingMelody = false
+        }
+        
+    }
+    
+    func updateScoreViewPosition() {
+        guard let scoreEntity = finalScoreEntity else { return }
+
+        scoreEntity.position = SIMD3<Float>(
+            userPosition.x,
+            userPosition.y,
+            userPosition.z - 0.5
+        )
+    }
+    
 }
 
 #Preview("Immersive Style", immersionStyle: .automatic, body: {

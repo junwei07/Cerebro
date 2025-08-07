@@ -28,7 +28,7 @@ struct ContentView: View {
             if (!isImmersive) {
                 Button("Show Orbs") {
                     Task {
-                        await self.openImmersiveSpace(id: "Forest")
+                        await self.openImmersiveSpace(id: "OrbSpace")
                     }
                     isImmersive = true
                     appState.floating = true
@@ -48,7 +48,17 @@ struct ContentView: View {
                 }
             }
             
-            isImmersive ? Text("Immersive space is open") : Text("Immersive space is closed")
+            if !appState.withSound {
+                Button("On Sound") {
+                    appState.withSound = true
+                }
+            } else {
+                Button("Off Sound") {
+                    appState.withSound = false
+                }
+            }
+            
+//            isImmersive ? Text("Immersive space is open") : Text("Immersive space is closed")
             
             if (appState.disperse) {
                 Text("dispersing...")
@@ -58,17 +68,25 @@ struct ContentView: View {
                 
                 if (appState.hidingOrbs) {
                     Button("Show Orbs") {
-                        appState.hidingOrbs = false;
+                        appState.hidingOrbs = false
                     }
 
                 } else {
                     
                     Button("Hide Orbs") {
-                        appState.hidingOrbs = true;
+                        appState.hidingOrbs = true
                     }
+                }
+                Button("Play Melody") {
+                    appState.playingMelody = true
                 }
             }
             
+            if appState.hidingOrbs {
+                Button("Hint") {
+                    appState.showHint = true
+                }
+            }
         }
         .frame(width: 600, height: 400)
         .padding()

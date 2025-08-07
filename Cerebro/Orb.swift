@@ -15,6 +15,12 @@ struct Orb: Identifiable {
     var entity: ModelEntity
     var initPosition: SIMD3<Float>
     var isHidden: Bool = false
-    
+    var isSelected: Bool = false
+    var audioResource: AudioFileResource? = nil
 }
 
+extension Orb: Equatable {
+    static func == (lhs: Orb, rhs: Orb) -> Bool {
+        return lhs.id == rhs.id
+    }
+}
