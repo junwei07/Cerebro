@@ -18,10 +18,12 @@ struct ContentView: View {
     
     var body: some View {
         VStack {
-            Model3D(named: "Scene", bundle: realityKitContentBundle)
-                .padding(.bottom, 50)
+//            Model3D(named: "Scene", bundle: realityKitContentBundle)
+//                .padding(.bottom, 50)
 
-            Text("Welcome to Cerebro!")
+            Text("Welcome to SEEK.")
+                .font(.largeTitle)
+                .fontWeight(.bold)
             
             if (!isImmersive) {
                 Button("Show Orbs") {
@@ -53,24 +55,24 @@ struct ContentView: View {
                 Button("Reset") {
                     appState.disperse = false
                 }
+                
+                if (appState.hidingOrbs) {
+                    Button("Show Orbs") {
+                        appState.hidingOrbs = false;
+                    }
+
+                } else {
+                    
+                    Button("Hide Orbs") {
+                        appState.hidingOrbs = true;
+                    }
+                }
             }
             
         }
         .frame(width: 600, height: 400)
         .padding()
         .glassBackgroundEffect()
-//        .windowResizability(.contentSize)
-//        RealityView { content in
-//            let orbMesh = MeshResource.generateSphere(radius: 0.2)
-//            let material = SimpleMaterial(color: .yellow, isMetallic: true)
-//            let orbEntity = ModelEntity(mesh: orbMesh, materials: [material])
-//            orbEntity.scale = .init(x: 1, y: 1, z: 1)
-//            orbEntity.position = .init(x: 0, y: 0, z: -3)
-//            content.add(orbEntity)
-            
-            // use for loading of pers
-//            guard let orbEntity else { return }
-            
         }
     
     

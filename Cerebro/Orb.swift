@@ -14,6 +14,7 @@ struct Orb: Identifiable {
     var id = UUID()
     var entity: ModelEntity
     var initPosition: SIMD3<Float>
+    var isHidden: Bool = false
     
 }
 

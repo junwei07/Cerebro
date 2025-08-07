@@ -13,4 +13,5 @@ class AppState: ObservableObject {
     @Published var isImmersive: Bool = false
     @Published var disperse: Bool = false
     @Published var floating: Bool = false
+    @Published var hidingOrbs: Bool = false
 }
