@@ -205,17 +205,14 @@ struct OrbsSpace: View {
         appState.floating = false
         
         Task {
-            try? await Task.sleep(nanoseconds: 500_000_000)
+            /try? await Task.sleep(nanoseconds: 2_000_000_000)
             // disperse orbs
             
             for i in Orbs.indices {
                 // Check if orb has an assigned plane
-                if let planePosition = orbAssignments[i] {
+                if let _ = orbAssignments[i] {
                     // Move orb to assigned plane's position (initPosition was updated to plane pos on assignment)
                     
-                    
-                    
-                    //may not have updated when palnes assigned due to async
                     let targetPosition = Orbs[i].initPosition
                     print("target pos in disperseObs \(targetPosition)")
                     
