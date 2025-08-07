@@ -20,6 +20,10 @@ struct OrbsSpace: View {
     // MARK: - to store 4 ORBS positions (fixed after assigned)
     @State private var orbAssignments: [UUID?] = [nil, nil, nil, nil]
     
+    // store actual plane positionals in anchor coordinate systems
+    @State private var orbPlanePositions: [SIMD3<Float>?] = [nil, nil, nil, nil]
+
+    
     @State private var anchor = AnchorEntity(world: [0, 0, 0])
     @State private var userPosition: SIMD3<Float> = .zero
     @State private var selectedOrb: Orb?
@@ -122,10 +126,10 @@ struct OrbsSpace: View {
     
     
     func assignOrbsToPlanes() {
-        print("hello")
+        print("Assigning Orbs to planes...")
         // Only assign if we have at least 4 planes and orbs are unassigned
         guard worldTrackingManager.detectedPlanes.count >= 4 else {
-            print("Not enough planes observed. Please move around more.")
+            print("Not enough planes observed, only found \(worldTrackingManager.detectedPlanes.count). Please move around more.")
             return
         }
         
@@ -141,8 +145,10 @@ struct OrbsSpace: View {
                 if let anchorEntity = worldTrackingManager.rootEntity.findEntity(named: "\(plane.id)") {
                     let planePos = anchorEntity.position
                     let targetPos = SIMD3<Float>(planePos.x, planePos.y + 0.2, planePos.z)
+                    // MARK: - error occurs when balls still take this initial targetPos
                     
-//                    Orbs[index].entity.move(to: Transform(translation: targetPos), relativeTo: worldTrackingManager.rootEntity, duration: 1.5, timingFunction: .easeInOut)
+                    //Orbs[index].entity.move(to: Transform(translation: targetPos), relativeTo: worldTrackingManager.rootEntity, duration: 1.5, timingFunction: .easeInOut)
+                    
                     Orbs[index].initPosition = targetPos
                 }
             } else {
@@ -205,20 +211,28 @@ struct OrbsSpace: View {
         appState.floating = false
         
         Task {
-            /try? await Task.sleep(nanoseconds: 2_000_000_000)
+            try? await Task.sleep(nanoseconds: 500_000_000)
             // disperse orbs
             
             for i in Orbs.indices {
                 // Check if orb has an assigned plane
-                if let _ = orbAssignments[i] {
+                if let planeID = orbAssignments[i], //orbAssignments[i] gives the planeID i.e plane's UUID
                     // Move orb to assigned plane's position (initPosition was updated to plane pos on assignment)
+                    let anchorEntity = worldTrackingManager.rootEntity.findEntity(named: "\(planeID)") {
+                        
+                        let planePos = anchorEntity.position(relativeTo: worldTrackingManager.rootEntity)
+                        let targetPosition = SIMD3<Float>(planePos.x, planePos.y + 0.2, planePos.z)
+                        Orbs[i].initPosition = targetPosition
+                        print("disperse: moving orb\(i) to \(targetPosition)")
                     
-                    let targetPosition = Orbs[i].initPosition
-                    print("target pos in disperseObs \(targetPosition)")
-                    
-                    let transform = Transform(translation: targetPosition)
-                    
-                    Orbs[i].entity.move(to: transform, relativeTo: worldTrackingManager.rootEntity, duration: 2, timingFunction: .easeInOut)
+                        let transform = Transform(translation: targetPosition)
+
+                        Orbs[i].entity
+                            .move(to: transform,
+                                  relativeTo: worldTrackingManager.rootEntity,
+                                  duration: 2,
+                                  timingFunction: .easeInOut)
+
                 } else {
                     print("No plane assigned for orb \(i)")
                     // If no plane assigned, fallback to initial cluster position
