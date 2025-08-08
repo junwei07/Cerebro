@@ -12,9 +12,18 @@ struct CerebroApp: App {
     @StateObject private var appState = AppState()
     @StateObject private var worldTrackingManager = WorldTrackingManager()
     @State var immersionStyle : ImmersionStyle = .mixed
+    @State var backgroundisdark = true
     
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: "MainWindow") {
+            MainAppView(backgroundisdark: $backgroundisdark)
+        }
+        
+        ImmersiveSpace(id: "DarkBackground") {
+            MyImmersiveView(backgroundisdark: $backgroundisdark)
+        }
+        
+        WindowGroup(id: "ContentView") {
             ContentView(appState: appState)
         }
         .windowResizability(.automatic)

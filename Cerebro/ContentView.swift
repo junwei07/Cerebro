@@ -48,15 +48,15 @@ struct ContentView: View {
                 }
             }
             
-            if !appState.withSound {
-                Button("On Sound") {
-                    appState.withSound = true
-                }
-            } else {
-                Button("Off Sound") {
-                    appState.withSound = false
-                }
-            }
+//            if !appState.withSound {
+//                Button("On Sound") {
+//                    appState.withSound = true
+//                }
+//            } else {
+//                Button("Off Sound") {
+//                    appState.withSound = false
+//                }
+//            }
             
 //            isImmersive ? Text("Immersive space is open") : Text("Immersive space is closed")
             

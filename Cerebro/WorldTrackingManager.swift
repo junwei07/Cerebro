@@ -12,6 +12,7 @@ import ARKit
 class WorldTrackingManager: ObservableObject {
     let session = ARKitSession()
     @Published var worldInfo = WorldTrackingProvider()
+    
 
 
     func startSession() async throws {

@@ -15,6 +15,15 @@ struct OrbsSpace: View {
     @ObservedObject var worldTrackingManager: WorldTrackingManager
 //    @Environment(\.openWindow) private var openWindow
     @State private var Orbs: [Orb] = []
+    
+    // track plane IDs assigned to orbs
+        // MARK: - to store 4 ORBS positions (fixed after assigned)
+        @State private var orbAssignments: [UUID?] = [nil, nil, nil, nil]
+        
+        // store actual plane positionals in anchor coordinate systems
+    //    @State private var orbPlanePositions: [SIMD3<Float>?] = [nil, nil, nil, nil]
+        @State private var content: RealityViewContent?
+    
     @State private var anchor = AnchorEntity(world: [0, 0, 0])
     @State private var anchorTable = AnchorEntity(plane: .horizontal, classification: .table)
     @State private var anchorSeat = AnchorEntity(plane: .horizontal, classification: .seat)
@@ -30,15 +39,6 @@ struct OrbsSpace: View {
     }
     
     var body: some View {
-        
-//        VStack {
-//            Model3D(named: "Scene", bundle: realityKitContentBundle)
-//                .padding(.bottom, 50)
-//
-//            Text("Hello, world!")
-//        }
-//        .padding()
-        
         
         RealityView { content, attachments in
             anchor.children.removeAll()
@@ -90,6 +90,8 @@ struct OrbsSpace: View {
             }
             
             content.add(anchor)
+            //planes detected by AR session
+//            content.add(worldTrackingManager.rootEntity)
             
             try? await worldTrackingManager.startSession()
 
