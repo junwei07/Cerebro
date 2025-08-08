@@ -21,7 +21,8 @@ struct OrbsSpace: View {
     @State private var orbAssignments: [UUID?] = [nil, nil, nil, nil]
     
     // store actual plane positionals in anchor coordinate systems
-    @State private var orbPlanePositions: [SIMD3<Float>?] = [nil, nil, nil, nil]
+//    @State private var orbPlanePositions: [SIMD3<Float>?] = [nil, nil, nil, nil]
+    @State private var content: RealityViewContent?
 
     
     @State private var anchor = AnchorEntity(world: [0, 0, 0])
@@ -33,7 +34,7 @@ struct OrbsSpace: View {
     var body: some View {
         
         RealityView { content in
-            
+            self.content = content
             // Initialize orbs once (only if empty)
             if Orbs.isEmpty {
                 let orbMesh = MeshResource.generateSphere(radius: 0.2)
@@ -142,9 +143,20 @@ struct OrbsSpace: View {
             if let index = orbAssignments.firstIndex(where: { $0 == nil }) {
                 orbAssignments[index] = plane.id
                 
-                if let anchorEntity = worldTrackingManager.rootEntity.findEntity(named: "\(plane.id)") {
-                    let planePos = anchorEntity.position
-                    let targetPos = SIMD3<Float>(planePos.x, planePos.y + 0.2, planePos.z)
+                //print("test anchor: \(anchor)")
+                if let anchorEntity = worldTrackingManager.detectedPlanes.first(where: { $0.id == plane.id } ) {
+                    let anchor = anchorEntity.originFromAnchorTransform.columns.3
+
+                    let targetPos = SIMD3<Float>(anchor.x, anchor.y + 0.2, anchor.z)
+                    
+//                    var planeMaterial = PhysicallyBasedMaterial()
+//                    
+//                    var sphere = ModelEntity(
+//                        mesh: .generateSphere(radius: 0.3))
+//                    sphere.setPosition(targetPos, relativeTo: nil)
+//                    self.content?.add(sphere)
+                    
+                    print("target Pos: \(targetPos)")
                     // MARK: - error occurs when balls still take this initial targetPos
                     
                     //Orbs[index].entity.move(to: Transform(translation: targetPos), relativeTo: worldTrackingManager.rootEntity, duration: 1.5, timingFunction: .easeInOut)

@@ -96,11 +96,14 @@ class WorldTrackingManager: ObservableObject {
          //MARK: - to remove material later on, just leave orbs
          //add blue material for plane
          planeMaterial.baseColor = .init(tint: .green.withAlphaComponent(0.1))
-         
-         let planeModelEntity = ModelEntity(
+         /*
+         var planeModelEntity = ModelEntity(
             mesh: .generatePlane(width: extent.width,
                                  height: extent.height),
                                  materials: [planeMaterial])
+          
+         
+//         planeModelEntity.name = "\(anchor.id)"
          
          //rotate it to be flat
          planeModelEntity.transform.rotation = simd_quatf(angle: -.pi / 2, axis: [1, 0, 0])
@@ -117,6 +120,7 @@ class WorldTrackingManager: ObservableObject {
              anchorEntity.addChild(planeModelEntity)
              rootEntity.addChild(anchorEntity)
          }
+          */
      }
      
      func removePlaneEntity(_ anchor: PlaneAnchor) throws {
