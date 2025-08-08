@@ -13,6 +13,7 @@ import ARKit
 struct OrbsSpace: View {
     @ObservedObject var appState: AppState
     @ObservedObject var worldTrackingManager: WorldTrackingManager
+    @ObservedObject var worldTrackingManager2: WorldTrackingManager2
 //    @Environment(\.openWindow) private var openWindow
     @State private var Orbs: [Orb] = []
     
@@ -20,8 +21,8 @@ struct OrbsSpace: View {
         // MARK: - to store 4 ORBS positions (fixed after assigned)
         @State private var orbAssignments: [UUID?] = [nil, nil, nil, nil]
         
-        // store actual plane positionals in anchor coordinate systems
-    //    @State private var orbPlanePositions: [SIMD3<Float>?] = [nil, nil, nil, nil]
+//         store actual plane positionals in anchor coordinate systems
+//        @State private var orbPlanePositions: [SIMD3<Float>?] = [nil, nil, nil, nil]
         @State private var content: RealityViewContent?
     
     @State private var anchor = AnchorEntity(world: [0, 0, 0])
@@ -91,7 +92,7 @@ struct OrbsSpace: View {
             
             content.add(anchor)
             //planes detected by AR session
-//            content.add(worldTrackingManager.rootEntity)
+            content.add(worldTrackingManager2.rootEntity)
             
             try? await worldTrackingManager.startSession()
 
@@ -433,5 +434,5 @@ struct OrbsSpace: View {
 }
 
 #Preview("Immersive Style", immersionStyle: .automatic, body: {
-    OrbsSpace(appState: .init(), worldTrackingManager: .init())
+    OrbsSpace(appState: .init(), worldTrackingManager: .init(), worldTrackingManager2: .init())
 })
