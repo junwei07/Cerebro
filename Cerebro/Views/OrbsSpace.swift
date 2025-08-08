@@ -170,25 +170,6 @@ struct OrbsSpace: View {
             
         }
     }
-
-//        for i in 0..<4 {
-//            let plane = worldTrackingManager.detectedPlanes[i]
-//            orbAssignments[i] = plane.id
-//
-//            // Find anchor entity for plane
-//            if let anchorEntity = worldTrackingManager.rootEntity.findEntity(named: "\(plane.id)") {
-//                let planePos = anchorEntity.position
-//                let targetPos = SIMD3<Float>(planePos.x, planePos.y + 0.2, planePos.z) // float slightly above plane
-//                
-//                // Move orb entity smoothly to the plane
-//                Orbs[i].entity.move(to: Transform(translation: targetPos), relativeTo: worldTrackingManager.rootEntity, duration: 1.5, timingFunction: .easeInOut)
-//                Orbs[i].initPosition = targetPos
-//                // update orb's base position for floating animation
-//                }
-//            }
-//        }
-//    
-
     
     func fetchUserPosition() {
             guard let matrix = worldTrackingManager.worldInfo.queryDeviceAnchor(atTimestamp: CACurrentMediaTime())?.originFromAnchorTransform else {
